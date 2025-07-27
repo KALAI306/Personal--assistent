@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOMO - Personal Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 24px;
+        }
+        
+        .chat-container {
+            height: calc(100vh - 200px);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.5) transparent;
+        }
+        
+        .chat-container::-webkit-scrollbar { width: 6px; }
+        .chat-container::-webkit-scrollbar-track { background: transparent; }
+        .chat-container::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.5); border-radius: 20px; }
+        
+        .user-message {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            border-radius: 18px 18px 4px 18px;
+            align-self: flex-end;
+        }
+        
+        .assistant-message {
+            background: rgba(255, 255, 255, 0.6);
+            color: #333;
+            border-radius: 18px 18px 18px 4px;
+            align-self: flex-start;
+        }
+        
+        .typing-animation span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out both;
+            margin: 0 2px;
+        }
+        
+        .typing-animation span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-animation span:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.4); }
+            40% { transform: scale(1.0); }
+        }
+        
+        .input-container {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .send-btn { background: linear-gradient(135deg, #6e8efb, #a777e3); }
+        .mic-btn { background: rgba(255, 255, 255, 0.3); }
+
+    </style>
+</head>
+<body class="flex items-center justify-center">
+    
+    <div class="glass w-full max-w-3xl mx-4 h-[90vh] flex flex-col p-6 relative">
+        <!-- Header -->
+        <div class="flex items-center mb-6">
+             <div class="logo-container mr-4">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">M</div>
+            </div>
+            <div>
+                <h1 class="text-white text-2xl font-bold">👋 Hi, I'm MOMO — Kalai's Personal Assistant</h1>
+            </div>
+        </div>
+        
+        <!-- Chat container -->
+        <div id="chat-container" class="chat-container flex flex-col space-y-4 p-2">
+            <div class="assistant-message p-4 max-w-[80%]">
+                Hello Kalai 👋 How can I assist you today?
+            </div>
+        </div>
+        
+        <!-- Input area -->
+        <div class="mt-auto">
+            <form id="chat-form" class="flex items-center space-x-2">
+                <div class="input-container flex-1 flex items-center p-2 pl-5">
+                    <input type="text" id="user-input" class="bg-transparent border-none outline-none w-full text-gray-800 placeholder-gray-500" placeholder="Type your message..." autocomplete="off">
+                    <button type="button" id="mic-btn" class="mic-btn h-10 w-10 rounded-full flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                    </button>
+                </div>
+                <button type="submit" class="send-btn h-12 w-12 rounded-full flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const chatContainer = document.getElementById('chat-container');
+        
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add(isUser ? 'user-message' : 'assistant-message', 'p-4', 'max-w-[80%]');
+            messageDiv.textContent = content;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.classList.add('assistant-message', 'p-4', 'typing-animation');
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = `<span></span><span></span><span></span>`;
+            chatContainer.appendChild(typingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) typingIndicator.remove();
+        }
+        
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = userInput.value.trim();
+            
+            if (message) {
+                addMessage(message, true);
+                userInput.value = '';
+                showTypingIndicator();
+                
+                try {
+                    // Your n8n Production URL is now included here.
+                    const N8N_WEBHOOK_URL = 'https://kalais.app.n8n.cloud/webhook/momo-chat-api';
+                    
+                    const response = await fetch(N8N_WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            message: message,
+                            user: 'Kalai-HTML-Chat' 
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Server Error: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    removeTypingIndicator();
+                    
+                    const aiResponse = data.output;
+                    if (aiResponse) {
+                        addMessage(aiResponse);
+                    } else {
+                        addMessage("I received a response, but it was empty. Please check the n8n workflow execution logs.");
+                    }
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    removeTypingIndicator();
+                    addMessage("I'm sorry, I'm having trouble connecting. Please check the webhook URL and make sure the n8n workflow is active.");
+                }
+            }
+        });
+    </script>
+</body>
+</html>

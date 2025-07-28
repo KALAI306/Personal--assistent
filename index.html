@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MOMO - Personal Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- CHANGE 1: ADD THE MARKED.JS LIBRARY -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
         
@@ -61,6 +63,23 @@
             color: #333;
             border-radius: 18px 18px 18px 4px;
             align-self: flex-start;
+        }
+        
+        /* Styles for rendered Markdown */
+        .assistant-message pre {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 1em;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .assistant-message code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .assistant-message ul {
+            list-style-type: disc;
+            padding-left: 20px;
         }
         
         .typing-animation span {
@@ -137,7 +156,11 @@
         function addMessage(content, isUser = false) {
             const messageDiv = document.createElement('div');
             messageDiv.classList.add(isUser ? 'user-message' : 'assistant-message', 'p-4', 'max-w-[80%]');
-            messageDiv.textContent = content;
+            
+            // CHANGE 2: USE `marked.parse()` TO CONVERT MARKDOWN TO HTML
+            // We use .innerHTML because marked.parse() returns an HTML string.
+            messageDiv.innerHTML = marked.parse(content);
+
             chatContainer.appendChild(messageDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
@@ -166,7 +189,6 @@
                 showTypingIndicator();
                 
                 try {
-                    // Your n8n Production URL is now included here.
                     const N8N_WEBHOOK_URL = 'https://kalais.app.n8n.cloud/webhook/momo-chat-api';
                     
                     const response = await fetch(N8N_WEBHOOK_URL, {

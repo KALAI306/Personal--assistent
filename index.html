@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MOMO - Personal Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- CHANGE 1: ADD THE MARKED.JS LIBRARY -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
         
@@ -63,23 +61,6 @@
             color: #333;
             border-radius: 18px 18px 18px 4px;
             align-self: flex-start;
-        }
-        
-        /* Styles for rendered Markdown */
-        .assistant-message pre {
-            background-color: #2d2d2d;
-            color: #f8f8f2;
-            padding: 1em;
-            border-radius: 8px;
-            overflow-x: auto;
-            font-family: 'Courier New', Courier, monospace;
-        }
-        .assistant-message code {
-            font-family: 'Courier New', Courier, monospace;
-        }
-        .assistant-message ul {
-            list-style-type: disc;
-            padding-left: 20px;
         }
         
         .typing-animation span {
@@ -156,11 +137,7 @@
         function addMessage(content, isUser = false) {
             const messageDiv = document.createElement('div');
             messageDiv.classList.add(isUser ? 'user-message' : 'assistant-message', 'p-4', 'max-w-[80%]');
-            
-            // CHANGE 2: USE `marked.parse()` TO CONVERT MARKDOWN TO HTML
-            // We use .innerHTML because marked.parse() returns an HTML string.
-            messageDiv.innerHTML = marked.parse(content);
-
+            messageDiv.textContent = content;
             chatContainer.appendChild(messageDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
@@ -189,7 +166,13 @@
                 showTypingIndicator();
                 
                 try {
+                    // ===================================================================
+                    // ❗❗❗ IMPORTANT: REPLACE THE URL BELOW ❗❗❗
+                    // This is the ONLY line you need to change.
+                    // Go to your n8n workflow, click the Webhook node, and copy the
+                    // PRODUCTION URL. It will NOT have "tempp" in the name.
                     const N8N_WEBHOOK_URL = 'https://tempp1.app.n8n.cloud/webhook/momo-chat-api';
+                    // ===================================================================
                     
                     const response = await fetch(N8N_WEBHOOK_URL, {
                         method: 'POST',
@@ -212,13 +195,19 @@
                     if (aiResponse) {
                         addMessage(aiResponse);
                     } else {
-                        addMessage("I received a response, but it was empty. Please check the n8n workflow execution logs.");
+                        // Check if n8n returned tool calls instead of direct output
+                        const toolCalls = data.tool_calls;
+                        if (toolCalls && toolCalls.length > 0) {
+                             addMessage(`I've initiated an action: ${toolCalls[0].name}. I will let you know when it's done.`);
+                        } else {
+                             addMessage("I received an empty response. Please check the n8n workflow execution logs.");
+                        }
                     }
                     
                 } catch (error) {
                     console.error('Error:', error);
                     removeTypingIndicator();
-                    addMessage("I'm sorry, I'm having trouble connecting. Please check the webhook URL and make sure the n8n workflow is active.");
+                    addMessage("I'm sorry, I'm having trouble connecting. Please check that you've used the correct PRODUCTION webhook URL and that your n8n workflow is active.");
                 }
             }
         });

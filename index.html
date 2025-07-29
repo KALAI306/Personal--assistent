@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MOMO - Personal Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 1. ADD THIS SCRIPT FOR MARKDOWN CONVERSION -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
         
@@ -54,6 +56,7 @@
             color: #333;
             border-radius: 18px 18px 4px 18px;
             align-self: flex-end;
+            animation: fadeInMessage 0.3s ease-out;
         }
         
         .assistant-message {
@@ -61,6 +64,27 @@
             color: #333;
             border-radius: 18px 18px 18px 4px;
             align-self: flex-start;
+            animation: fadeInMessage 0.3s ease-out;
+        }
+
+        /* 2. ADD THESE STYLES FOR CODE BLOCKS */
+        .assistant-message pre {
+            background-color: #282c34; /* Dark background for code */
+            color: #abb2bf; /* Light grey text */
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto; /* Allow horizontal scrolling for long lines */
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+            margin-top: 0.5rem;
+        }
+        .assistant-message code {
+            font-family: inherit;
+        }
+        
+        @keyframes fadeInMessage {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .typing-animation span {
@@ -86,11 +110,35 @@
             border-radius: 24px;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
         }
         
-        .send-btn { background: linear-gradient(135deg, #6e8efb, #a777e3); }
-        .mic-btn { background: rgba(255, 255, 255, 0.3); }
-
+        .input-container:focus-within {
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .send-btn {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            box-shadow: 0 4px 15px rgba(110, 142, 251, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(110, 142, 251, 0.6);
+        }
+        
+        .mic-btn {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+        
+        .mic-btn:hover {
+            background: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body class="flex items-center justify-center">
@@ -119,11 +167,15 @@
                 <div class="input-container flex-1 flex items-center p-2 pl-5">
                     <input type="text" id="user-input" class="bg-transparent border-none outline-none w-full text-gray-800 placeholder-gray-500" placeholder="Type your message..." autocomplete="off">
                     <button type="button" id="mic-btn" class="mic-btn h-10 w-10 rounded-full flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
                     </button>
                 </div>
                 <button type="submit" class="send-btn h-12 w-12 rounded-full flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
                 </button>
             </form>
         </div>
@@ -133,11 +185,21 @@
         const chatForm = document.getElementById('chat-form');
         const userInput = document.getElementById('user-input');
         const chatContainer = document.getElementById('chat-container');
+        const micBtn = document.getElementById('mic-btn');
         
         function addMessage(content, isUser = false) {
             const messageDiv = document.createElement('div');
             messageDiv.classList.add(isUser ? 'user-message' : 'assistant-message', 'p-4', 'max-w-[80%]');
-            messageDiv.textContent = content;
+            
+            // 3. UPDATE THIS LOGIC
+            if (isUser) {
+                // For user messages, just use plain text
+                messageDiv.textContent = content;
+            } else {
+                // For AI messages, parse the markdown into HTML
+                messageDiv.innerHTML = marked.parse(content);
+            }
+
             chatContainer.appendChild(messageDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
@@ -156,6 +218,7 @@
             if (typingIndicator) typingIndicator.remove();
         }
         
+        // Handle form submission
         chatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const message = userInput.value.trim();
@@ -166,7 +229,6 @@
                 showTypingIndicator();
                 
                 try {
-                    // This is your correct PRODUCTION URL
                     const N8N_WEBHOOK_URL = 'https://tempp1.app.n8n.cloud/webhook/momo-chat-api';
                     
                     const response = await fetch(N8N_WEBHOOK_URL, {
@@ -174,7 +236,7 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
                             message: message,
-                            user: 'Kalai-HTML-Chat' 
+                            user: 'Kalai-HTML-Chat'
                         }),
                     });
 
@@ -186,7 +248,6 @@
                     
                     removeTypingIndicator();
                     
-                    // The agent node returns the final output in data.output or data[0].json.output
                     const aiResponse = data.output || (data[0] && data[0].json && data[0].json.output);
                     
                     if (aiResponse) {
@@ -202,6 +263,24 @@
                     addMessage("I'm sorry, I'm having trouble connecting. Please check that your n8n workflow is active.");
                 }
             }
+        });
+        
+        // Handle microphone button click (demo functionality)
+        micBtn.addEventListener('click', () => {
+            if (micBtn.classList.contains('animate-pulse')) return;
+
+            micBtn.classList.add('animate-pulse');
+            
+            setTimeout(() => {
+                micBtn.classList.remove('animate-pulse');
+                addMessage("Voice input is currently being set up. Please type your message for now.", true);
+                
+                showTypingIndicator();
+                setTimeout(() => {
+                    removeTypingIndicator();
+                    addMessage("I see you're trying to use voice input. I'll make sure that's ready for you soon!");
+                }, 1500);
+            }, 1000);
         });
     </script>
 </body>

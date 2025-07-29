@@ -166,13 +166,8 @@
                 showTypingIndicator();
                 
                 try {
-                    // ===================================================================
-                    // ❗❗❗ IMPORTANT: REPLACE THE URL BELOW ❗❗❗
-                    // This is the ONLY line you need to change.
-                    // Go to your n8n workflow, click the Webhook node, and copy the
-                    // PRODUCTION URL. It will NOT have "tempp" in the name.
+                    // This is your correct PRODUCTION URL
                     const N8N_WEBHOOK_URL = 'https://tempp1.app.n8n.cloud/webhook/momo-chat-api';
-                    // ===================================================================
                     
                     const response = await fetch(N8N_WEBHOOK_URL, {
                         method: 'POST',
@@ -191,23 +186,20 @@
                     
                     removeTypingIndicator();
                     
-                    const aiResponse = data.output;
+                    // The agent node returns the final output in data.output or data[0].json.output
+                    const aiResponse = data.output || (data[0] && data[0].json && data[0].json.output);
+                    
                     if (aiResponse) {
                         addMessage(aiResponse);
                     } else {
-                        // Check if n8n returned tool calls instead of direct output
-                        const toolCalls = data.tool_calls;
-                        if (toolCalls && toolCalls.length > 0) {
-                             addMessage(`I've initiated an action: ${toolCalls[0].name}. I will let you know when it's done.`);
-                        } else {
-                             addMessage("I received an empty response. Please check the n8n workflow execution logs.");
-                        }
+                        console.error("Unexpected response format from n8n:", data);
+                        addMessage("I'm sorry, I received a response I couldn't understand. Please check the n8n execution logs.");
                     }
                     
                 } catch (error) {
                     console.error('Error:', error);
                     removeTypingIndicator();
-                    addMessage("I'm sorry, I'm having trouble connecting. Please check that you've used the correct PRODUCTION webhook URL and that your n8n workflow is active.");
+                    addMessage("I'm sorry, I'm having trouble connecting. Please check that your n8n workflow is active.");
                 }
             }
         });
